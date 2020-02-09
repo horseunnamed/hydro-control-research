@@ -8,7 +8,7 @@ class GridMap:
     max_x: float
     min_y: float
     max_y: float
-    vals: np.array
+    vals: np.ndarray
 
     def size_x(self) -> int:
         return self.vals.shape[0]
@@ -31,9 +31,8 @@ class GridMap:
             self.vals.data.tobytes()))
 
 
-def create_map(size_x, size_y, cell_size, val) -> GridMap:
-    return GridMap(0, (size_x - 1) * cell_size, 0, (size_y - 1) * cell_size,
-                   np.full((size_x, size_y), val))
+def create_map(vals: np.ndarray, cell_size: int) -> GridMap:
+    return GridMap(0, (vals.shape[1] - 1) * cell_size, 0, (vals.shape[0] - 1) * cell_size, vals)
 
 
 def read(grd_fname) -> GridMap:
