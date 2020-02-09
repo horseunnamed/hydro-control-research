@@ -1,60 +1,63 @@
 from dataclasses import dataclass
 import numpy as np
-from typing import Any
+
 
 @dataclass
 class GridMap:
-    minX: float
-    maxX: float
-    minY: float
-    maxY: float
+    min_x: float
+    max_x: float
+    min_y: float
+    max_y: float
     vals: np.array
 
-    def sizeX(self) -> int:
+    def size_x(self) -> int:
         return self.vals.shape[0]
 
-    def sizeY(self) -> int:
+    def size_y(self) -> int:
         return self.vals.shape[1]
 
-    def minZ(self) -> float:
+    def min_z(self) -> float:
         return np.min(self.vals)
 
-    def maxZ(self) -> float:
+    def max_z(self) -> float:
         return np.max(self.vals)
 
     def __hash__(self):
         return hash((
-            self.minX,
-            self.maxX,
-            self.minY,
-            self.maxY,
+            self.min_x,
+            self.max_x,
+            self.min_y,
+            self.max_y,
             self.vals.data.tobytes()))
 
-def createMap(sizeX, sizeY, cellSize, val) -> GridMap:
-    return GridMap(0, (sizeX - 1) * cellSize, 0, (sizeY - 1) * cellSize,
-        np.full((sizeX, sizeY), val))
 
-def read(grdFname) -> GridMap:
-    with open(grdFname, 'rb') as f:
+def create_map(size_x, size_y, cell_size, val) -> GridMap:
+    return GridMap(0, (size_x - 1) * cell_size, 0, (size_y - 1) * cell_size,
+                   np.full((size_x, size_y), val))
+
+
+def read(grd_fname) -> GridMap:
+    with open(grd_fname, 'rb') as f:
         np.fromfile(f, 'b', 4)
-        sizeX, sizeY = np.fromfile(f, np.int16, 2)
-        minX, maxX, minY, maxY = np.fromfile(f, np.double, 4)
+        size_x, size_y = np.fromfile(f, np.int16, 2)
+        min_x, max_x, min_y, max_y = np.fromfile(f, np.double, 4)
         np.fromfile(f, np.double, 2)
         vals = np.fromfile(f, np.float32)
         return GridMap(
-            minX = minX,
-            maxX = maxX,
-            minY = minY,
-            maxY = maxY,
-            vals = np.reshape(vals, (sizeX, sizeY))
+            min_x=min_x,
+            max_x=max_x,
+            min_y=min_y,
+            max_y=max_y,
+            vals=np.reshape(vals, (size_x, size_y))
         )
 
-def write(gridMap, grdFname):
-    with open(grdFname, 'wb') as f:
+
+def write(grid_map, grd_fname):
+    with open(grd_fname, 'wb') as f:
         np.array(b'DSBB').tofile(f)
-        np.array([gridMap.sizeX(), gridMap.sizeY()], dtype=np.int16).tofile(f)
+        np.array([grid_map.size_x(), grid_map.size_y()], dtype=np.int16).tofile(f)
         np.array([
-            gridMap.minX, gridMap.maxX,
-            gridMap.minY, gridMap.maxY, 
-            gridMap.minZ(), gridMap.maxZ()], dtype=np.float64).tofile(f)
-        gridMap.vals.astype(np.float32).tofile(f)
+            grid_map.min_x, grid_map.max_x,
+            grid_map.min_y, grid_map.max_y,
+            grid_map.min_z(), grid_map.max_z()], dtype=np.float64).tofile(f)
+        grid_map.vals.astype(np.float32).tofile(f)
