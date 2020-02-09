@@ -17,7 +17,7 @@ def draw_water_distribution(result, count):
     for it in range(count):
         x, y = it // 4, it % 4
         axes[x, y].imshow(result.h[it],
-                          norm=colors.Normalize(vmin=0, vmax=0.1),
+                          norm=colors.Normalize(vmin=np.min(result.h[it]), vmax=np.mean(result.h[it])),
                           cmap='Blues')
         axes[x, y].set_title(f't = {it}')
 

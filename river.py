@@ -7,6 +7,7 @@ import opensimplex
 class River:
     id: int
     depth: int
+    sloped: bool
     cells: [(int, int)]
     origin_cells: [(int, int)]
 
@@ -14,7 +15,6 @@ class River:
 @dataclass
 class RiverLand:
     river: River
-    smooth: float
     cells: [(int, int)]
 
 
@@ -32,8 +32,8 @@ def sgn(val: int) -> int:
 
 def gen_cells(x0: int, y0: int, x1: int, y1: int) -> [(int, int)]:
     return [(y, x)
-            for x in range(x0, x1 + 1, sgn(x1 - x0))
-            for y in range(y0, y1 + 1, sgn(y1 - y0))]
+            for y in range(y0, y1 + 1, sgn(y1 - y0))
+            for x in range(x0, x1 + 1, sgn(x1 - x0))]
 
 
 @dataclass
@@ -51,7 +51,13 @@ def create_main_river(params: MainRiverParams) -> River:
     y1 = params.relief_shape[0] // 2 + params.width // 2
     cells = gen_cells(x0, y0, x1, y1)
     origin_cells = gen_cells(0, y0, 0, y1)
-    return River(0, params.depth, cells, origin_cells)
+    return River(
+        id=0,
+        depth=params.depth,
+        sloped=False,
+        cells=cells,
+        origin_cells=origin_cells
+    )
 
 
 @dataclass
@@ -60,7 +66,6 @@ class RiverLandsParams:
     width: int
     depth: int
     count: int
-    smooth: float
     relief_shape: (int, int)
 
 
@@ -83,7 +88,13 @@ def create_river_lands(params: RiverLandsParams) -> [RiverLand]:
         river_cells = gen_cells(river_x0, river_y0, river_x1, river_y1)
         river_origin_cells = gen_cells(river_x0, river_y0, river_x1, river_y0)
 
-        side_river = River(i + 1, params.depth, river_cells, river_origin_cells)
+        side_river = River(
+            id=i + 1,
+            depth=params.depth,
+            sloped=True,
+            cells=river_cells,
+            origin_cells=river_origin_cells
+        )
 
         river_land_half_width = params.relief_shape[1] // params.count // 2
 
@@ -94,7 +105,7 @@ def create_river_lands(params: RiverLandsParams) -> [RiverLand]:
         river_land_y1 = 0 if is_even else params.relief_shape[0] - 1
         river_land_cells = gen_cells(river_land_x0, river_land_y0, river_land_x1, river_land_y1)
 
-        river_land = RiverLand(side_river, params.smooth, river_land_cells)
+        river_land = RiverLand(side_river, river_land_cells)
         river_lands.append(river_land)
 
     return river_lands
@@ -103,17 +114,11 @@ def create_river_lands(params: RiverLandsParams) -> [RiverLand]:
 def dig_river(
         river: River,
         relief_vals: np.ndarray,
-        save_relief: bool = True,
-        with_noise: bool = True,
         noise_smooth: int = 0.1
 ) -> np.ndarray:
     result = relief_vals.copy()
-    for cell in river.cells:
-        noise_value = min(river_noise(cell[1] * 0.1, cell[0] * noise_smooth) + 0.5, 1) if with_noise else 1
-        if save_relief:
-            result[cell] += river.depth * noise_value
-        else:
-            result[cell] = river.depth * noise_value
+    for i, cell in enumerate(river.cells):
+        noise_value = min(river_noise(cell[1] * 0.1, cell[0] * noise_smooth) + 0.3, 1)
+        slope = 1 - i / (len(river.cells) - 1) if river.sloped else 1
+        result[cell] += river.depth * noise_value * slope
     return result
-
-
